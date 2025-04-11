@@ -1,20 +1,22 @@
 import pandas as pd
 import os
 import sqlite3
+import pickle
+import re
 from tqdm import tqdm
-import shutil
 
-# Ruta base del pendrive
-PENDRIVE_PATH = "E:/gutenberg"  # ← ajusta esta línea según tu sistema
-
-METADATA_CSV = os.path.join(PENDRIVE_PATH, "metadata.csv")
-BOOKS_FOLDER = os.path.join(PENDRIVE_PATH, "books")
+# === CONFIGURACIÓN ===
+BASE_PATH = r"E:\GutembergALL"
+METADATA_CSV = os.path.join(BASE_PATH, "gutenberg_over_70000_metadata.csv")
+BOOKS_FOLDER = os.path.join(BASE_PATH, "books")
 DB_PATH = "gutenberg.db"
 LOCAL_TXT_FOLDER = "libros_ingles"
-
 os.makedirs(LOCAL_TXT_FOLDER, exist_ok=True)
 
-# Conexión a SQLite y creación de tabla y vista
+# 💡 Si usas Git, añade esto a tu .gitignore para excluir los textos locales:
+# libros_ingles/
+
+# === CONEXIÓN A SQLITE ===
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
@@ -30,13 +32,17 @@ CREATE TABLE IF NOT EXISTS procesados (
 
 cursor.execute("""
 CREATE VIEW IF NOT EXISTS descargados AS
-SELECT * FROM procesados
-WHERE estado = 'descargado' AND anio IS NOT NULL
+SELECT * FROM procesados WHERE estado = 'descargado' AND anio IS NOT NULL
+""")
+
+cursor.execute("""
+CREATE VIEW IF NOT EXISTS errores AS
+SELECT * FROM procesados WHERE estado = 'error'
 """)
 
 conn.commit()
 
-# Función de inserción
+# === FUNCIÓN DE INSERCIÓN ROBUSTA ===
 def registrar(book_id, estado, palabras=None, lenguaje=None, anio=None):
     try:
         cursor.execute("""
@@ -58,38 +64,59 @@ def registrar(book_id, estado, palabras=None, lenguaje=None, anio=None):
     except Exception as e:
         print(f"⚠️ Error al registrar {book_id}: {e}")
 
-# Cargar metadatos
+# === BUSCAR ARCHIVO PKL CORRESPONDIENTE A UN ID ===
+def buscar_archivo_pkl(book_id):
+    patron = f"{book_id}_"
+    for root, _, files in os.walk(BOOKS_FOLDER):
+        for file in files:
+            if file.startswith(patron) and file.endswith(".pkl"):
+                return os.path.join(root, file)
+    return None
+
+# === CARGAR METADATOS CSV ===
 df = pd.read_csv(METADATA_CSV)
-df = df[df['language'] == 'en']
+df = df[df['Language'] == 'English']
+df = df.set_index('Book Num')
 
 print(f"📄 Libros en inglés encontrados: {len(df)}")
 
-# Insertar y copiar libros
-for _, row in tqdm(df.iterrows(), total=len(df), desc="📥 Importando libros"):
-    book_id = row['gutenberg_id']
-    file_path = os.path.join(BOOKS_FOLDER, f"{book_id}.txt")
-    local_copy_path = os.path.join(LOCAL_TXT_FOLDER, f"{book_id}.txt")
-
-    if not os.path.exists(file_path):
+# === PROCESAR LIBROS ===
+for book_id in tqdm(df.index, desc="📥 Importando libros"):
+    file_path = buscar_archivo_pkl(book_id)
+    if not file_path:
         continue
 
+    local_copy_path = os.path.join(LOCAL_TXT_FOLDER, f"{book_id}.txt")
+
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            texto = f.read()
+        with open(file_path, "rb") as f:
+            texto = pickle.load(f)
+
+        if not isinstance(texto, str):
+            raise ValueError("Contenido no es texto")
+
         palabras = len(texto.split())
-        anio = row.get('publication_date', None)
-        lenguaje = row.get('language', 'en')
+        lenguaje = df.loc[book_id, 'Language']
+
+        # ⏳ Extraer año desde Published Date
+        published = df.loc[book_id, 'Published Date']
+        anio = None
+        if isinstance(published, str):
+            match = re.search(r"(\d{4})", published)
+            if match:
+                anio = int(match.group(1))
 
         registrar(book_id, "descargado", palabras, lenguaje, anio)
 
-        # Copiar a carpeta local si es inglés y no existe
-        if lenguaje == "en" and not os.path.exists(local_copy_path):
-            shutil.copyfile(file_path, local_copy_path)
+        if not os.path.exists(local_copy_path):
+            with open(local_copy_path, "w", encoding="utf-8") as f:
+                f.write(texto)
             print(f"📁 Copiado local: {book_id}.txt")
 
     except Exception as e:
         print(f"⚠️ [{book_id}] Error leyendo archivo: {e}")
         registrar(book_id, "error")
 
+# === FINALIZAR ===
 conn.close()
 print("✅ Finalizado.")
