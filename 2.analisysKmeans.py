@@ -31,7 +31,7 @@ def crear_vista_rango_continuo_sqlite(conn, min_libros):
     print(f"\U0001F4C5 Rango continuo seleccionado: {anio_ini} - {anio_fin} ({len(rango_max)} años)")
 
     query = f"""
-        CREATE TEMP VIEW IF NOT EXISTS libros_view AS
+        CREATE VIEW IF NOT EXISTS libros_view AS
         SELECT * FROM procesados
         WHERE anio BETWEEN {anio_ini} AND {anio_fin}
           AND anio IN (
