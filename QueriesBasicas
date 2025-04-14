@@ -1,6 +1,7 @@
 🗂 SPARQL Queries for Toxicity RDF (Project Gutenberg)
 
 🌍 1. Languages used across books
+    (Idiomas utilizados en los libros)
 ----------------------------------
 SELECT ?lang (COUNT(?book) AS ?totalLibros)
 WHERE {
@@ -12,6 +13,7 @@ ORDER BY DESC(?totalLibros)
 
 
 📆 2. Number of books per year
+    (Número de libros por año)
 -------------------------------
 SELECT ?year (COUNT(?book) AS ?numLibros)
 WHERE {
@@ -23,6 +25,7 @@ ORDER BY ?year
 
 
 🧪 3. Frequency of each toxicity type
+    (Frecuencia de cada tipo de toxicidad)
 --------------------------------------
 SELECT ?tipo (COUNT(?expr) AS ?total)
 WHERE {
@@ -36,6 +39,7 @@ ORDER BY DESC(?total)
 
 
 🧱 4. Toxicity categories by hate level
+    (Categorías de toxicidad por nivel de odio)
 ----------------------------------------
 SELECT ?nivel (COUNT(?tipo) AS ?tiposAsociados)
 WHERE {
@@ -46,6 +50,7 @@ GROUP BY ?nivel
 
 
 ⚠️ 5. Books with high threat scores (> 0.03)
+    (Libros con puntuaciones altas de amenaza (> 0.03))
 --------------------------------------------
 SELECT ?titulo ?score
 WHERE {
@@ -60,6 +65,7 @@ ORDER BY DESC(?score)
 
 
 🏆 6. Top 10 most toxic books by average score
+    (Top 10 libros más tóxicos por puntuación media)
 -----------------------------------------------
 SELECT ?titulo (AVG(?score) AS ?mediaScore)
 WHERE {
