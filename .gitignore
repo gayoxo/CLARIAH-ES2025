@@ -1,1 +1,3 @@
 libros_ingles/
+*.rdf
+*.ttl
