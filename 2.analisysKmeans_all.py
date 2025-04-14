@@ -86,14 +86,14 @@ def main():
 
     colores = {"Toxicidad Bajo": "#8BC34A", "Toxicidad Medio": "#FFC107", "Toxicidad Alto": "#F44336"}
 
-    plt.figure(figsize=(25, 6))
-    percentages.plot(kind="bar", stacked=True, color=[colores[col] for col in percentages.columns])
-    plt.title("Porcentaje de libros por grupo de toxicidad y año")
-    plt.xlabel("Año")
-    plt.ylabel("Porcentaje (%)")
-    plt.xticks(rotation=45)
-    plt.legend(title="Nivel de toxicidad")
-    plt.tight_layout()
+    fig, ax = plt.subplots(figsize=(12, 5))
+    percentages.plot(kind="bar", stacked=True, color=[colores[col] for col in percentages.columns], ax=ax)
+    ax.set_title("Porcentaje de libros por grupo de toxicidad y año")
+    ax.set_xlabel("Año")
+    ax.set_ylabel("Porcentaje (%)")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    ax.legend(title="Nivel de toxicidad", loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
     plt.show()
 
     # Media por año
