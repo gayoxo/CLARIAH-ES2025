@@ -1,0 +1,72 @@
+🌍 SPARQL QUERIES — MULTILINGUAL TOXICITY ANALYSIS
+
+===============================================================
+1️⃣ Idiomas disponibles y número de libros por idioma
+---------------------------------------------------------------
+SELECT ?lang (COUNT(?book) AS ?total)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang .
+}
+GROUP BY ?lang
+ORDER BY DESC(?total)
+
+
+===============================================================
+2️⃣ Media de score por tipo de toxicidad y por idioma
+---------------------------------------------------------------
+SELECT ?lang ?category (AVG(?score) AS ?avgScore)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang ;
+        <http://etsisi.upm.es/tox/hasToxicityScore> ?expr .
+  ?expr <http://etsisi.upm.es/tox/hasCategory> ?category ;
+        <http://etsisi.upm.es/tox/hasScore> ?score .
+}
+GROUP BY ?lang ?category
+ORDER BY ?lang ?category
+
+
+===============================================================
+3️⃣ Top 5 libros más tóxicos por idioma (por score medio)
+---------------------------------------------------------------
+SELECT ?lang ?title (AVG(?score) AS ?avgToxicity)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang ;
+        <http://etsisi.upm.es/tox/hasTitle> ?title ;
+        <http://etsisi.upm.es/tox/hasToxicityScore> ?expr .
+  ?expr <http://etsisi.upm.es/tox/hasScore> ?score .
+}
+GROUP BY ?lang ?title
+ORDER BY DESC(?avgToxicity)
+LIMIT 5
+
+
+===============================================================
+4️⃣ Tipos de toxicidad más frecuentes por idioma
+---------------------------------------------------------------
+SELECT ?lang ?category (COUNT(?expr) AS ?total)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang ;
+        <http://etsisi.upm.es/tox/hasToxicityScore> ?expr .
+  ?expr <http://etsisi.upm.es/tox/hasCategory> ?category .
+}
+GROUP BY ?lang ?category
+ORDER BY ?lang DESC(?total)
+
+
+===============================================================
+5️⃣ Evolución temporal de libros por idioma
+---------------------------------------------------------------
+SELECT ?lang ?year (COUNT(?book) AS ?numBooks)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang ;
+        <http://etsisi.upm.es/tox/hasYear> ?year .
+}
+GROUP BY ?lang ?year
+ORDER BY ?lang ?year
+
+===============================================================

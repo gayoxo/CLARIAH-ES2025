@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS procesados (
     palabras INTEGER,
     lenguaje TEXT,
     anio INTEGER,
+    titulo TEXT,
     toxicity REAL,
     severe_toxicity REAL,
     obscene REAL,
@@ -43,19 +44,21 @@ CREATE TABLE IF NOT EXISTS procesados (
 """)
 conn.commit()
 
+
 # === FUNCIONES ===
-def registrar(book_id, palabras, lenguaje, anio, scores):
+def registrar(book_id, palabras, lenguaje, anio, titulo, scores):
     try:
         cursor.execute("""
             INSERT INTO procesados (
-                book_id, palabras, lenguaje, anio,
+                book_id, palabras, lenguaje, anio, titulo,
                 toxicity, severe_toxicity, obscene,
                 identity_attack, insult, threat, sexual_explicit
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(book_id) DO UPDATE SET
                 palabras = excluded.palabras,
                 lenguaje = excluded.lenguaje,
                 anio = excluded.anio,
+                titulo = excluded.titulo,
                 toxicity = excluded.toxicity,
                 severe_toxicity = excluded.severe_toxicity,
                 obscene = excluded.obscene,
@@ -68,6 +71,7 @@ def registrar(book_id, palabras, lenguaje, anio, scores):
             palabras,
             lenguaje,
             anio,
+            titulo,
             float(scores.get("toxicity", 0.0)),
             float(scores.get("severe_toxicity", 0.0)),
             float(scores.get("obscene", 0.0)),
@@ -79,6 +83,7 @@ def registrar(book_id, palabras, lenguaje, anio, scores):
         conn.commit()
     except Exception as e:
         print(f"⚠️ Error al registrar {book_id}: {e}")
+
 
 def buscar_archivo_pkl(book_id):
     patron = f"{book_id}_"
@@ -134,6 +139,7 @@ for book_id in tqdm(df.index, desc="📖 Analizando libros"):
 
         palabras = len(texto.split())
         lenguaje = df.loc[book_id, 'Language']
+        titulo = df.loc[book_id, 'Book Title']
 
         published = df.loc[book_id, 'Published Date']
         anio = None
@@ -145,7 +151,7 @@ for book_id in tqdm(df.index, desc="📖 Analizando libros"):
         parrafos = dividir_en_parrafos(texto)
         scores = analizar_parrafos(parrafos)
 
-        registrar(book_id, palabras, lenguaje, anio, scores)
+        registrar(book_id, palabras, lenguaje, anio, titulo, scores)
         print(f"✅ Analizado {book_id}")
 
     except Exception as e:

@@ -1,0 +1,73 @@
+🗂 SPARQL Queries for Toxicity RDF (Project Gutenberg)
+
+🌍 1. Languages used across books
+----------------------------------
+SELECT ?lang (COUNT(?book) AS ?totalLibros)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasLanguage> ?lang .
+}
+GROUP BY ?lang
+ORDER BY DESC(?totalLibros)
+
+
+📆 2. Number of books per year
+-------------------------------
+SELECT ?year (COUNT(?book) AS ?numLibros)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasYear> ?year .
+}
+GROUP BY ?year
+ORDER BY ?year
+
+
+🧪 3. Frequency of each toxicity type
+--------------------------------------
+SELECT ?tipo (COUNT(?expr) AS ?total)
+WHERE {
+  ?expr a <http://etsisi.upm.es/tox/ToxicExpression> ;
+        <http://etsisi.upm.es/tox/hasCategory> ?tipo ;
+        <http://etsisi.upm.es/tox/hasScore> ?score .
+  FILTER(?score > 0.03)
+}
+GROUP BY ?tipo
+ORDER BY DESC(?total)
+
+
+🧱 4. Toxicity categories by hate level
+----------------------------------------
+SELECT ?nivel (COUNT(?tipo) AS ?tiposAsociados)
+WHERE {
+  ?tipo a <http://etsisi.upm.es/tox/ToxicityCategory> ;
+        <http://etsisi.upm.es/tox/belongsToLevel> ?nivel .
+}
+GROUP BY ?nivel
+
+
+⚠️ 5. Books with high threat scores (> 0.03)
+--------------------------------------------
+SELECT ?titulo ?score
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasTitle> ?titulo ;
+        <http://etsisi.upm.es/tox/hasToxicityScore> ?expr .
+  ?expr <http://etsisi.upm.es/tox/hasCategory> <http://etsisi.upm.es/tox/threat> ;
+        <http://etsisi.upm.es/tox/hasScore> ?score .
+  FILTER(?score > 0.03)
+}
+ORDER BY DESC(?score)
+
+
+🏆 6. Top 10 most toxic books by average score
+-----------------------------------------------
+SELECT ?titulo (AVG(?score) AS ?mediaScore)
+WHERE {
+  ?book a <http://etsisi.upm.es/tox/Document> ;
+        <http://etsisi.upm.es/tox/hasTitle> ?titulo ;
+        <http://etsisi.upm.es/tox/hasToxicityScore> ?expr .
+  ?expr <http://etsisi.upm.es/tox/hasScore> ?score .
+}
+GROUP BY ?titulo
+ORDER BY DESC(?mediaScore)
+LIMIT 10
