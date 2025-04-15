@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph - {{ param }}</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        #network {
+            width: 100%;
+            height: 85vh;
+            border: 1px solid lightgray;
+        }
+        .button-group {
+            text-align: center;
+            margin: 10px;
+        }
+        .button-group button {
+            margin: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        .button-group button:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Network based on: <strong>{{ param }}</strong></h2>
+
+    <!-- Buttons to switch toxicity index -->
+    <div class="button-group">
+        <button onclick="window.location.href='/grafo/toxicity/'">Toxicity</button>
+        <button onclick="window.location.href='/grafo/severe_toxicity/'">Severe Toxicity</button>
+        <button onclick="window.location.href='/grafo/obscene/'">Obscene</button>
+        <button onclick="window.location.href='/grafo/identity_attack/'">Identity Attack</button>
+        <button onclick="window.location.href='/grafo/insult/'">Insult</button>
+        <button onclick="window.location.href='/grafo/threat/'">Threat</button>
+    </div>
+
+    <!-- Buttons to filter by level -->
+    <div class="button-group">
+        <button onclick="filtrarNivel('Alto')">High Level</button>
+        <button onclick="filtrarNivel('Medio')">Medium Level</button>
+        <button onclick="filtrarNivel('Bajo')">Low Level</button>
+        <button onclick="resetear()">Show All</button>
+    </div>
+
+    <div id="network"></div>
+
+    <script>
+        let allNodes, allEdges, network;
+
+        fetch(`/grafo/{{ param }}/data/`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('network');
+                const options = {
+                    nodes: {
+                        shape: 'dot',
+                        size: 16,
+                        font: { size: 14 },
+                    },
+                    groups: {
+                        anio: { color: 'skyblue' },
+                        libro: { color: 'lightgreen' },
+                        toxicidad: { color: 'salmon' }
+                    },
+                    physics: {
+                        stabilization: false,
+                        barnesHut: {
+                            gravitationalConstant: -30000,
+                            springLength: 100
+                        }
+                    }
+                };
+                allNodes = new vis.DataSet(data.nodes);
+                allEdges = new vis.DataSet(data.edges);
+                network = new vis.Network(container, {
+                    nodes: allNodes,
+                    edges: allEdges
+                }, options);
+            });
+
+        function filtrarNivel(level) {
+            const param = "{{ param }}";
+            const labelFiltro = level + " (" + param + ")";
+
+            const visibleNodes = allNodes.get().filter(node => {
+                if (node.group === 'toxicidad') return node.label === labelFiltro;
+                if (node.group === 'libro') {
+                    const edgesToLibro = allEdges.get().filter(e => e.to === node.id);
+                    const connectedTox = edgesToLibro.find(e => {
+                        const toxNode = allNodes.get(e.from);
+                        return toxNode?.group === 'toxicidad' && toxNode.label === labelFiltro;
+                    });
+                    return connectedTox !== undefined;
+                }
+                if (node.group === 'anio') {
+                    return allEdges.get().some(e => {
+                        const toxNode = allNodes.get(e.to);
+                        return toxNode?.group === 'toxicidad' && toxNode.label === labelFiltro;
+                    });
+                }
+                return false;
+            });
+
+            const visibleIds = new Set(visibleNodes.map(n => n.id));
+            const visibleEdges = allEdges.get().filter(e => visibleIds.has(e.from) && visibleIds.has(e.to));
+
+            network.setData({
+                nodes: new vis.DataSet(visibleNodes),
+                edges: new vis.DataSet(visibleEdges)
+            });
+        }
+
+        function resetear() {
+            network.setData({
+                nodes: allNodes,
+                edges: allEdges
+            });
+        }
+    </script>
+</body>
+</html>

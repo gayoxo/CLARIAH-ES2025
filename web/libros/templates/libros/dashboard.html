@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toxicity Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Toxicity Dashboard for Books</h1>
+    <canvas id="graficoToxicidad" width="800" height="400"></canvas>
+    <script>
+        const labels = {{ labels|safe }};
+        const data = {
+            labels: labels,
+            datasets: [
+                { label: 'Toxicity', data: {{ toxicity|safe }}, borderColor: 'red', fill: false },
+                { label: 'Severe Toxicity', data: {{ severe_toxicity|safe }}, borderColor: 'orange', fill: false },
+                { label: 'Obscene', data: {{ obscene|safe }}, borderColor: 'green', fill: false },
+                { label: 'Identity Attack', data: {{ identity_attack|safe }}, borderColor: 'blue', fill: false },
+                { label: 'Insult', data: {{ insult|safe }}, borderColor: 'purple', fill: false },
+                { label: 'Threat', data: {{ threat|safe }}, borderColor: 'brown', fill: false }
+            ]
+        };
+
+        const config = {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Toxicity Evolution by Year' }
+                }
+            }
+        };
+
+        new Chart(document.getElementById('graficoToxicidad'), config);
+    </script>
+</body>
+</html>
